@@ -361,19 +361,25 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
         first_point = path2d[0]
         second_point = path2d[1]
         first_segment_angle = get_movement_angle(first_point, second_point)
-        
-        # 如果initial_direction为None，使用第一段路径的方向作为初始方向
-        current_direction = first_segment_angle if initial_direction is None else initial_direction
-        
+
         # 是否需要包含初始转向
         if include_initial_turn and initial_direction is not None:
             turn = calculate_turn(initial_direction, first_segment_angle)
             if turn:
                 commands.append(turn)
                 current_direction = first_segment_angle
+        else:
+            # 如果initial_direction为None，使用第一段路径的方向作为初始方向
+            if initial_direction is None:
+                initial_direction = first_segment_angle
+            
+            current_direction = initial_direction
+        
     else:
         # 如果路径少于2个点，使用提供的初始方向或默认为0
-        current_direction = initial_direction if initial_direction is not None else 0
+        if initial_direction is None:
+            initial_direction = 0
+        current_direction = initial_direction
     
     # 跟踪上一个移动方向的角度
     prev_angle = current_direction
@@ -418,4 +424,4 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
             "value": move_distance
         })    
 
-    return commands
+    return commands, initial_direction

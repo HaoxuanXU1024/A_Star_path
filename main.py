@@ -97,7 +97,7 @@ def main(args):
         
         # 生成机器人指令
         # commands = generate_robot_commands(path2d, initial_direction=None, include_initial_turn=False)
-        commands = generate_robot_commands(path2d, 
+        commands, initial_direction = generate_robot_commands(path2d, 
                                         initial_direction=args.initial_direction, 
                                         include_initial_turn=False)
         # 保存指令
@@ -131,7 +131,8 @@ def main(args):
             'end': end_point,
             'path_length': len(path),
             'path2d': path2d,
-            'commands': commands
+            'commands': commands,
+            'initial_direction': initial_direction,
         })
     
     # 保存所有结果
