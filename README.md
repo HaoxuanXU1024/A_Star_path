@@ -55,7 +55,7 @@ python main.py --input cloud_map.ply --waypoints "-9.8,-4.0,1.0;-15.5,-8.0,1.0"
 移除点云中的特定区域：
 
 ```bash
-python main.py --input cloud_map.ply --remove_polygon "-19,-10.5;-19,-6.1;-14.2,-5.7;-14.2,-10.2"
+python main.py --input cloud_map.ply --remove_polygon
 ```
 
 保存JSON文件：

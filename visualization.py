@@ -213,6 +213,14 @@ def visualize_all_paths_with_pointcloud(all_paths_data, pcd, output_file, z_min=
     # 保存图形
     plt.tight_layout()
     plt.savefig(output_file, dpi=dpi)
+    start_pixel = ax.transData.transform(np.array([[start_point[0], start_point[1]]]))
+    end_pixel = ax.transData.transform(np.array([[end_point[0], end_point[1]]]))
+    
+    # 使用图形大小上下文打印实际位置
+    fig_size = fig.get_size_inches() * dpi
+    print(f"图像大小: {fig_size}")
+    print(f"Path {segment} - Start point actual coordinates: {start_pixel[0]}")
+    print(f"Path {segment} - End point actual coordinates: {end_pixel[0]}")
     print(f"所有路径和障碍物点云投影已保存到 {output_file}")
     plt.close(fig)  # 显式关闭图形对象
 

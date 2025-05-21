@@ -180,11 +180,11 @@ def main(args):
         adjusted_path, path2d = adjust_path(path, start_point)
         
         # 保存路径
-        if args.save_json:
-            path_file = os.path.join(args.output_dir, f'path_{i+1}_to_{i+2}.json')
-            with open(path_file, 'w') as f:
-                json.dump(path2d, f)
-            print(f"路径已保存到 {path_file}")
+        # if args.save_json:
+        #     path_file = os.path.join(args.output_dir, f'path_{i+1}_to_{i+2}.json')
+        #     with open(path_file, 'w') as f:
+        #         json.dump(path2d, f)
+        #     print(f"路径已保存到 {path_file}")
         
         # 生成机器人指令
         # commands = generate_robot_commands(path2d, initial_direction=None, include_initial_turn=False)
