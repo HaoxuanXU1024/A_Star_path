@@ -224,6 +224,13 @@ def visualize_all_paths_with_pointcloud(all_paths_data, pcd, output_file, z_min=
     print(f"所有路径和障碍物点云投影已保存到 {output_file}")
     plt.close(fig)  # 显式关闭图形对象
 
+    mapping = {
+        "start_point": start_pixel[0].tolist(),
+        "end_point": end_pixel[0].tolist(),
+    }
+
+    return mapping
+
 def add_path_to_pointcloud(pcd, all_paths_data, z_height=0.6, output_file=None, 
                            path_point_interval_along=0.1, 
                            marker_side_length=0.2, marker_point_spacing=0.05,
