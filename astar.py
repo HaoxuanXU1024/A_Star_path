@@ -350,24 +350,11 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
         return 45 * round(angle / 45) % 360
 
     def calculate_turn(current_dir, desired_dir):
-        """计算最小转向角度和方向"""
-        # 标准化角度到 [0, 360)
-        current_dir = current_dir % 360
-        desired_dir = desired_dir % 360
-        
-        # 计算顺时针和逆时针的转向角度
-        clockwise = (desired_dir - current_dir) % 360
-        counter_clockwise = (current_dir - desired_dir) % 360
-        
-        # 选择较小的转向角度
-        if clockwise <= counter_clockwise:
-            # 顺时针转向更短 (对机器人来说是向右)
-            if clockwise == 0:  # 如果不需要转向
-                return None
-            return f"right {clockwise}°"
-        else:
-            # 逆时针转向更短 (对机器人来说是向左)
-            return f"left {counter_clockwise}°"
+        difference = (desired_dir - current_dir) % 360
+        return {
+            "type": "turn",
+            "value": difference
+        }
 
     # 确定初始方向
     if len(path2d) >= 2:
@@ -382,7 +369,7 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
         if include_initial_turn and initial_direction is not None:
             turn = calculate_turn(initial_direction, first_segment_angle)
             if turn:
-                commands.append(f"Turn {turn}")
+                commands.append(turn)
                 current_direction = first_segment_angle
     else:
         # 如果路径少于2个点，使用提供的初始方向或默认为0
@@ -408,13 +395,16 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
         if angle_change >= 20:  # 使用20度作为阈值判断方向是否改变
             # 先完成当前的直行
             if move_distance > EPSILON:
-                commands.append(f"Move forward {move_distance:.2f}m")
+                commands.append({
+                    "type": "forward",
+                    "value": move_distance
+                })
                 move_distance = 0.0
             
             # 计算并执行转向
             turn = calculate_turn(prev_angle, curr_angle)
             if turn:
-                commands.append(f"Turn {turn}")
+                commands.append(turn)
                 prev_angle = curr_angle  # 更新当前朝向
         
         # 计算并累加这段路径的距离
@@ -423,6 +413,9 @@ def generate_robot_commands(path2d, initial_direction=180, include_initial_turn=
     
     # 处理最后一段直行
     if move_distance > EPSILON:
-        commands.append(f"Move forward {move_distance:.2f}m")
-    
+        commands.append({
+            "type": "forward",
+            "value": move_distance
+        })    
+
     return commands
