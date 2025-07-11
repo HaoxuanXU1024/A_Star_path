@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use('Agg')  # 使用非交互式后端
 import matplotlib.pyplot as plt
 import open3d as o3d
+import matplotlib.patheffects as path_effects
 
 def visualize_path(path2d, start_point, end_point, save_path=None, ax=None, color='b', label=None):
     """
@@ -150,7 +151,13 @@ def visualize_all_paths_with_pointcloud(all_paths_data, pcd, output_file, z_min=
     
     # 收集所有路径点用于后续确定坐标轴范围
     all_path_points = []
-    
+
+    shadow_effect = path_effects.withSimplePatchShadow(
+        offset=(1, -1),
+        shadow_rgbFace='black',
+        alpha=0.8
+    )
+
     # 绘制所有路径（使用绝对坐标）
     for i, path_data in enumerate(all_paths_data):
         # 获取路径数据
@@ -162,30 +169,34 @@ def visualize_all_paths_with_pointcloud(all_paths_data, pcd, output_file, z_min=
         rel_path2d = path_data['path2d']
         abs_path2d = [(p[0] + start_point[0], p[1] + start_point[1]) for p in rel_path2d]
         all_path_points.extend(abs_path2d)
-        
+
         # 选择颜色
         color = color_cycle[i % len(color_cycle)]
-        
+
         # 绘制路径
         label = f'Path {segment}'
         x = [p[0] for p in abs_path2d]
         y = [p[1] for p in abs_path2d]
         ax.plot(x, y, color=color, linewidth=2, label=label)
-        
+
         # 绘制起点和终点
         ax.plot(start_point[0], start_point[1], 'o', color=color, markersize=8)
         ax.plot(end_point[0], end_point[1], 's', color=color, markersize=8)
 
-        # 添加起点标注
-        ax.annotate(f'Start point {i+1}', (start_point[0], start_point[1]), 
-                   xytext=(10, 10), textcoords='offset points', 
-                   color=color, fontsize=10, fontweight='bold')
-        
+        # 添加起点标注 with shadow
+        ax.annotate(f'Start point {i+1}', (start_point[0], start_point[1]),
+                    xytext=(10, -15), textcoords='offset points',
+                    color=color, fontsize=20, fontweight='bold',
+                    path_effects=[shadow_effect]) # MODIFIED: Applied new shadow effect
+
         if i == len(all_paths_data) - 1:  # 最后一个路径的终点
-            ax.annotate(f'End point {i+2}', (end_point[0], end_point[1]), 
-                       xytext=(10, 10), textcoords='offset points', 
-                       color=color, fontsize=10, fontweight='bold')
-    
+            # 添加终点标注 with shadow
+            ax.annotate(f'End point {i+2}', (end_point[0], end_point[1]),
+                        xytext=(10, -15), textcoords='offset points',
+                        color=color, fontsize=20, fontweight='bold',
+                        path_effects=[shadow_effect]) # MODIFIED: Applied new shadow effect
+
+
     # 设置图形样式
     ax.grid(True)
     ax.set_title('Path and Obstacles Projection')
