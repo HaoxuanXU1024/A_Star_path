@@ -7,7 +7,7 @@ from scipy.spatial import KDTree
 
 def a_star_optimized(start, goal_pcd, obstacles, grid_size=0.1, goal_threshold=0.1, 
                      collision_threshold=0.05, max_time=300, max_steps=300000,
-                     z_min=-2.0, z_max=0.5):
+                     z_min=-1.0, z_max=0.6):
     """
     优化的A*路径规划算法，适用于复杂和远距离场景。
     
@@ -20,8 +20,8 @@ def a_star_optimized(start, goal_pcd, obstacles, grid_size=0.1, goal_threshold=0
         collision_threshold: 碰撞判定阈值
         max_time: 最大搜索时间（秒）
         max_steps: 最大搜索步数
-        z_min: 障碍物高度筛选下限
-        z_max: 障碍物高度筛选上限
+        z_min: 障碍物绝对高度筛选下限
+        z_max: 障碍物绝对高度筛选上限
     
     Returns:
         规划路径点列表
@@ -32,8 +32,8 @@ def a_star_optimized(start, goal_pcd, obstacles, grid_size=0.1, goal_threshold=0
     obstacle_points = []
     for pcd in obstacles:
         points = np.asarray(pcd.points)
-        # 只保留与起点高度相近的点
-        mask = (points[:, 2] >= (start[2] + z_min)) & (points[:, 2] <= (start[2] + z_max))
+        # 使用绝对高度筛选障碍物点
+        mask = (points[:, 2] >= z_min) & (points[:, 2] <= z_max)
         filtered_points = points[mask, :2]  # 只保留x,y坐标
         if len(filtered_points) > 0:  # 避免添加空的点集
             obstacle_points.append(filtered_points)

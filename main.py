@@ -34,7 +34,7 @@ def parse_arguments():
     parser.add_argument('--waypoints', type=str,
                         help='路径点文件 (JSON格式) 或直接的坐标列表 "x1,y1,z1;x2,y2,z2;..."')
     
-    parser.add_argument('--obstacle_z_min', type=float, default=-1.0,
+    parser.add_argument('--obstacle_z_min', type=float, default=0.35,
                         help='障碍物提取的最小Z值')
     
     parser.add_argument('--obstacle_z_max', type=float, default=0.6,
@@ -142,7 +142,7 @@ def main(args):
     else:
         # 默认路径点示例
         waypoints = [
-            (-9.8, -4.0, 1.0),
+            (-4.0, -1.0, 1.0),
             (-15.5, -8.0, 1.0)
         ]
         print(f"使用默认路径点: {waypoints}")
@@ -173,7 +173,9 @@ def main(args):
             goal_threshold=args.goal_threshold,
             collision_threshold=args.collision_threshold,
             max_time=args.max_time,
-            max_steps=args.max_steps
+            max_steps=args.max_steps,
+            z_min=args.obstacle_z_min, 
+            z_max=args.obstacle_z_max
         )
         
         # 调整路径
@@ -232,7 +234,8 @@ def main(args):
     
     # 生成综合可视化图(所有路径+点云投影)
     combined_vis_file = os.path.join(args.output_dir, 'all_paths_with_pointcloud.png')
-    visualize_all_paths_with_pointcloud(all_results, obstacle_pcd, combined_vis_file)
+    visualize_all_paths_with_pointcloud(all_results, obstacle_pcd, combined_vis_file,
+                                       z_min=args.obstacle_z_min, z_max=args.obstacle_z_max)
     
     # 将路径添加到点云文件中，并保存
     if args.add_to_pointcloud and all_results:

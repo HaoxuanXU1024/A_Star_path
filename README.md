@@ -43,7 +43,7 @@ python main.py --input <点云文件路径> --output_dir <输出目录> --waypoi
 完整效果：
 
 ```bash
-python main.py --input G:/HKUST/cloud_map_adjusted_m2.ply  --grid_size 0.1 --collision_threshold 0.05 --turn_penalty 20 --remove_polygon --initial_direction 180
+python main.py --input G:/HKUST/cloud_map_adjusted_m2.ply  --grid_size 0.1 --collision_threshold 1.6 --turn_penalty 20 --remove_polygon --initial_direction 180
 ```
 
 指定路径点（格式为"x1,y1,z1;x2,y2,z2;..."）：

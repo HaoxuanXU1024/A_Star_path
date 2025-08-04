@@ -1,0 +1,6 @@
+Turn right 90бу
+Move forward 2.72m
+Turn left 45бу
+Move forward 5.75m
+Turn left 45бу
+Move forward 7.12m
