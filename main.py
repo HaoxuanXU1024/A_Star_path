@@ -2,11 +2,14 @@ import os
 import json
 import time
 import argparse
+import numpy as np
+import open3d as o3d
 from utils import (
     load_point_cloud, 
     extract_obstacles, 
     create_goal_point_cloud,
     create_pool_obstacle,
+    create_square_obstacle,
     remove_points_in_polygon
 )
 from astar import (
@@ -49,7 +52,7 @@ def parse_arguments():
     parser.add_argument('--collision_threshold', type=float, default=0.05,
                         help='碰撞判定阈值')
     
-    parser.add_argument('--turn_penalty', type=float, default=20,
+    parser.add_argument('--turn_penalty', type=float, default=10,
                         help='转向惩罚系数')
     
     parser.add_argument('--remove_polygon', action='store_true',
@@ -69,6 +72,9 @@ def parse_arguments():
     
     parser.add_argument('--max_steps', type=int, default=300000,
                         help='A*算法最大搜索步数')
+    
+    parser.add_argument('--add_obstacles', type=str,
+                        help='添加额外障碍物 格式: "x1,y1,width1;x2,y2,width2;..." 例如: "-12.8,-11.0,1.0"')
     
     return parser.parse_args()
 
@@ -117,6 +123,25 @@ def parse_polygon(polygon_str):
     
     return polygon
 
+def parse_obstacles(obstacles_str):
+    """
+    解析额外障碍物字符串
+    
+    Args:
+        obstacles_str: 障碍物字符串 (x1,y1,width1;x2,y2,width2;...)
+        
+    Returns:
+        obstacles: 障碍物列表 [(x1,y1,width1), (x2,y2,width2), ...]
+    """
+    obstacles = []
+    for obstacle_str in obstacles_str.split(';'):
+        coords = [float(x) for x in obstacle_str.split(',')]
+        if len(coords) != 3:
+            raise ValueError(f"障碍物格式错误，应为 'x,y,width': {obstacle_str}")
+        obstacles.append(tuple(coords))
+    
+    return obstacles
+
 def main(args):
     """主函数"""
     # 创建输出目录
@@ -136,13 +161,28 @@ def main(args):
     obstacle_pcd = extract_obstacles(pcd, z_min=args.obstacle_z_min, z_max=args.obstacle_z_max)
     obstacles = [obstacle_pcd]
     
+    # 添加额外的障碍物
+    if args.add_obstacles:
+        additional_obstacles = parse_obstacles(args.add_obstacles)
+        for x, y, width in additional_obstacles:
+            square_obstacle = create_square_obstacle(
+                center_x=x, 
+                center_y=y, 
+                width=width,
+                z_min=args.obstacle_z_min,
+                z_max=args.obstacle_z_max,
+                density=0.05
+            )
+            obstacles.append(square_obstacle)
+            print(f"已添加方形障碍物: 中心({x:.1f}, {y:.1f})，宽度{width:.1f}m")
+    
     # 解析路径点
     if args.waypoints:
         waypoints = parse_waypoints(args.waypoints)
     else:
         # 默认路径点示例
         waypoints = [
-            (-4.0, -1.0, 1.0),
+            (-6.8, -5.0, 1.0),
             (-15.5, -8.0, 1.0)
         ]
         print(f"使用默认路径点: {waypoints}")
@@ -201,11 +241,29 @@ def main(args):
         
         # 单独保存每条路径的可视化图（带障碍物）
         vis_file = os.path.join(args.output_dir, f'path_{i+1}_to_{i+2}.png')
+        # 合并所有障碍物用于可视化
+        combined_obstacle_points = []
+        combined_obstacle_colors = []
+        for obs_pcd in obstacles:
+            points = np.asarray(obs_pcd.points)
+            colors = np.asarray(obs_pcd.colors) if hasattr(obs_pcd, 'colors') and len(obs_pcd.colors) > 0 else np.ones((len(points), 3)) * 0.7
+            combined_obstacle_points.append(points)
+            combined_obstacle_colors.append(colors)
+        
+        if combined_obstacle_points:
+            all_obstacle_points = np.vstack(combined_obstacle_points)
+            all_obstacle_colors = np.vstack(combined_obstacle_colors)
+            combined_obstacle_pcd = o3d.geometry.PointCloud()
+            combined_obstacle_pcd.points = o3d.utility.Vector3dVector(all_obstacle_points)
+            combined_obstacle_pcd.colors = o3d.utility.Vector3dVector(all_obstacle_colors)
+        else:
+            combined_obstacle_pcd = obstacle_pcd
+            
         visualize_path_with_obstacles(
             path2d, 
             start_point, 
             end_point, 
-            obstacle_pcd=obstacle_pcd,
+            obstacle_pcd=combined_obstacle_pcd,
             save_path=vis_file,
             z_min=args.obstacle_z_min, 
             z_max=args.obstacle_z_max
@@ -234,7 +292,25 @@ def main(args):
     
     # 生成综合可视化图(所有路径+点云投影)
     combined_vis_file = os.path.join(args.output_dir, 'all_paths_with_pointcloud.png')
-    visualize_all_paths_with_pointcloud(all_results, obstacle_pcd, combined_vis_file,
+    # 为综合可视化合并所有障碍物
+    combined_obstacle_points = []
+    combined_obstacle_colors = []
+    for obs_pcd in obstacles:
+        points = np.asarray(obs_pcd.points)
+        colors = np.asarray(obs_pcd.colors) if hasattr(obs_pcd, 'colors') and len(obs_pcd.colors) > 0 else np.ones((len(points), 3)) * 0.7
+        combined_obstacle_points.append(points)
+        combined_obstacle_colors.append(colors)
+    
+    if combined_obstacle_points:
+        all_obstacle_points = np.vstack(combined_obstacle_points)
+        all_obstacle_colors = np.vstack(combined_obstacle_colors)
+        combined_obstacle_pcd = o3d.geometry.PointCloud()
+        combined_obstacle_pcd.points = o3d.utility.Vector3dVector(all_obstacle_points)
+        combined_obstacle_pcd.colors = o3d.utility.Vector3dVector(all_obstacle_colors)
+    else:
+        combined_obstacle_pcd = obstacle_pcd
+        
+    visualize_all_paths_with_pointcloud(all_results, combined_obstacle_pcd, combined_vis_file,
                                        z_min=args.obstacle_z_min, z_max=args.obstacle_z_max)
     
     # 将路径添加到点云文件中，并保存

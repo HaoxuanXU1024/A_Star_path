@@ -46,6 +46,18 @@ python main.py --input <点云文件路径> --output_dir <输出目录> --waypoi
 python main.py --input G:/HKUST/cloud_map_adjusted_m2.ply  --grid_size 0.1 --collision_threshold 1.6 --turn_penalty 20 --remove_polygon --initial_direction 180
 ```
 
+添加额外障碍物：
+
+```bash
+python main.py --input G:/HKUST/cloud_map_adjusted_m2.ply --grid_size 0.1 --collision_threshold 1.6 --turn_penalty 20 --remove_polygon --initial_direction 180 --add_obstacles "-12.8,-11.0,1.0"
+```
+
+多个障碍物：
+
+```bash
+python main.py --input cloud_map.ply --add_obstacles "-12.8,-11.0,1.0;-5.0,-3.0,0.5"
+```
+
 指定路径点（格式为"x1,y1,z1;x2,y2,z2;..."）：
 
 ```bash
@@ -80,6 +92,7 @@ python main.py --input cloud_map.ply --save_json
 | `--add_to_pointcloud` | False | 是否将路径添加到点云文件 |
 | `--max_time` | 300 | A*算法最大搜索时间（秒） |
 | `--max_steps` | 300000 | A*算法最大搜索步数 |
+| `--add_obstacles` | None | 添加额外障碍物，格式："x1,y1,width1;x2,y2,width2;..." |
 
 ## 输出结果
 

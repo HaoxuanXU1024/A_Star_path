@@ -133,6 +133,53 @@ def create_pool_obstacle(corner_points, z_range=(0, 1), density=0.1):
     print(f"已创建水池障碍物点云，共 {len(all_points)} 个点")
     return water_pool_pcd
 
+def create_square_obstacle(center_x, center_y, width, z_min=0.0, z_max=0.6, density=0.05):
+    """
+    创建表示方形障碍物的点云
+    
+    Args:
+        center_x: 障碍物中心X坐标
+        center_y: 障碍物中心Y坐标  
+        width: 障碍物宽度（正方形边长）
+        z_min: 障碍物的最小高度
+        z_max: 障碍物的最大高度
+        density: 生成点云的密度，值越小点越密集
+        
+    Returns:
+        obstacle_pcd: 方形障碍物的点云对象
+    """
+    # 计算边界
+    half_width = width / 2.0
+    min_x = center_x - half_width
+    max_x = center_x + half_width
+    min_y = center_y - half_width
+    max_y = center_y + half_width
+    
+    # 根据密度创建均匀分布的网格点
+    x_coords = np.arange(min_x, max_x, density)
+    y_coords = np.arange(min_y, max_y, density)
+    z_coords = np.arange(z_min, z_max, density)
+    
+    # 创建3D网格
+    all_points = []
+    for x in x_coords:
+        for y in y_coords:
+            for z in z_coords:
+                all_points.append([x, y, z])
+    
+    all_points = np.array(all_points)
+    
+    # 创建Open3D点云对象
+    obstacle_pcd = o3d.geometry.PointCloud()
+    obstacle_pcd.points = o3d.utility.Vector3dVector(all_points)
+    
+    # 设置灰色
+    colors = np.ones((len(all_points), 3)) * 0.5  # 灰色 (R=0.5, G=0.5, B=0.5)
+    obstacle_pcd.colors = o3d.utility.Vector3dVector(colors)
+    
+    print(f"已创建方形障碍物点云，中心: ({center_x:.1f}, {center_y:.1f})，宽度: {width:.1f}m，共 {len(all_points)} 个点")
+    return obstacle_pcd
+
 def remove_points_in_polygon(pcd, polygon_vertices, z_min=-float('inf'), z_max=float('inf')):
     """
     移除点云中位于指定多边形区域内的点
