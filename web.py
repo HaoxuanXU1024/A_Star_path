@@ -1,12 +1,16 @@
 import json
 import os
 import shutil
+
+import numpy as np
+import open3d as o3d
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 from astar import a_star_optimized, adjust_path, generate_robot_commands
-from parsers import parse_polygon
-from utils import create_goal_point_cloud, extract_obstacles, load_point_cloud, remove_points_in_polygon
+from parsers import parse_obstacles, parse_polygon
+from utils import create_goal_point_cloud, create_square_obstacle, extract_obstacles, load_point_cloud, remove_points_in_polygon
 from visualization import visualize_all_paths_with_pointcloud
 
 OUTPUT_DIR = os.path.dirname(os.path.realpath(__file__)) + '/path_results'
@@ -39,7 +43,23 @@ def main():
     
     obstacle_pcd = extract_obstacles(pcd, z_min=-1.0, z_max=0.6)
     obstacles = [obstacle_pcd]
-    
+
+    obstacle_z_min = 0.35
+    obstacle_z_max = 0.6
+
+    additional_obstacles = parse_obstacles("-8.8,-7.0,0.5")
+    for x, y, width in additional_obstacles:
+        square_obstacle = create_square_obstacle(
+            center_x=x, 
+            center_y=y, 
+            width=width,
+            z_min=obstacle_z_min,
+            z_max=obstacle_z_max,
+            density=0.05
+        )
+        obstacles.append(square_obstacle)
+        print(f"已添加方形障碍物: 中心({x:.1f}, {y:.1f})，宽度{width:.1f}m")
+
     app = Flask(__name__)
     CORS(app)
 
@@ -76,9 +96,11 @@ def main():
             path = a_star_optimized(start_point, goal_pcd, obstacles,
                 grid_size=0.1,
                 goal_threshold=0.1,
-                collision_threshold=0.05,
+                collision_threshold=0.49,
                 max_time=300,
-                max_steps=300000)
+                max_steps=300000,
+                z_min=obstacle_z_min, 
+                z_max=obstacle_z_max)
             
             # 调整路径
             adjusted_path, path2d = adjust_path(path, start_point)
@@ -116,7 +138,28 @@ def main():
         
         # 生成综合可视化图(所有路径+点云投影)
         combined_vis_file = os.path.join(OUTPUT_DIR, 'all_paths_with_pointcloud.png')
-        mapping = visualize_all_paths_with_pointcloud(all_results, obstacle_pcd, combined_vis_file)
+
+        # 为综合可视化合并所有障碍物
+        combined_obstacle_points = []
+        combined_obstacle_colors = []
+        for obs_pcd in obstacles:
+            points = np.asarray(obs_pcd.points)
+            colors = np.asarray(obs_pcd.colors) if hasattr(obs_pcd, 'colors') and len(obs_pcd.colors) > 0 else np.ones((len(points), 3)) * 0.7
+            combined_obstacle_points.append(points)
+            combined_obstacle_colors.append(colors)
+
+        if combined_obstacle_points:
+            all_obstacle_points = np.vstack(combined_obstacle_points)
+            all_obstacle_colors = np.vstack(combined_obstacle_colors)
+            combined_obstacle_pcd = o3d.geometry.PointCloud()
+            combined_obstacle_pcd.points = o3d.utility.Vector3dVector(all_obstacle_points)
+            combined_obstacle_pcd.colors = o3d.utility.Vector3dVector(all_obstacle_colors)
+        else:
+            combined_obstacle_pcd = obstacle_pcd
+
+
+        mapping = visualize_all_paths_with_pointcloud(all_results, combined_obstacle_pcd, combined_vis_file,
+                                        z_min=obstacle_z_min, z_max=obstacle_z_max)
 
         final = {
             'paths': all_results,
