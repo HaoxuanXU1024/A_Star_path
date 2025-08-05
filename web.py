@@ -47,7 +47,7 @@ def main():
     obstacle_z_min = 0.35
     obstacle_z_max = 0.6
 
-    additional_obstacles = parse_obstacles("-8.8,-7.0,0.5")
+    additional_obstacles = parse_obstacles("-11,-7.0,0.5")
     for x, y, width in additional_obstacles:
         square_obstacle = create_square_obstacle(
             center_x=x, 
